@@ -49,6 +49,6 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git tag -a "${{ steps.new_tag.outputs.new_tag }}" -m "Auto-tag from PR #${{ github.event.pull_request.number }} merge"
+          git tag -a "${{ steps.new_tag.outputs.new_tag }}" -m "Auto-tag from PR #${{ github.event.pull_request.number }} and Base branch: ${{ github.event.pull_request.base.ref }} merge"
           git push origin "${{ steps.new_tag.outputs.new_tag }}"
           echo "Successfully created and pushed tag ${{ steps.new_tag.outputs.new_tag }}"
