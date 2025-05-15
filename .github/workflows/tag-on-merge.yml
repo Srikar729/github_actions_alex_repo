@@ -1,0 +1,62 @@
+name: Tag On PR Merge
+
+permissions:
+  contents: write
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - '**'  # all branches
+
+jobs:
+  inspect_and_tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR head branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          tag=$(git tag --list 'alpha.*' | sort -V | tail -n1)
+          if [ -z "$tag" ]; then
+            tag="alpha.0"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Parse version number
+        id: parse_tag
+        run: |
+          tag="${{ steps.get_tag.outputs.tag }}"
+          number="${tag#alpha.}"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Create new tag
+        id: new_tag
+        run: |
+          new_number=$(( ${{ steps.parse_tag.outputs.number }} + 1 ))
+          new_tag="alpha.$new_number"
+          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Git user
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Tag and push
+        env:
+          TOKEN: ${{ secrets.ALEX_REPO_PAT }}
+        run: |
+          git remote set-url origin https://x-access-token:$TOKEN@github.com/${{ github.repository }}
+          git tag -a "${{ steps.new_tag.outputs.new_tag }}" -m "Auto-tag from PR merge"
+          git push origin "${{ steps.new_tag.outputs.new_tag }}"
