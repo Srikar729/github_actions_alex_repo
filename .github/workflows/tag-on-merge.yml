@@ -8,7 +8,7 @@ on:
     types:
       - closed
     branches:
-      - '**'  # all branches
+      - '**'
 
 jobs:
   inspect_and_tag:
